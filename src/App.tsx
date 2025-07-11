@@ -1,3 +1,9 @@
+import ARWrapper from "./components/ARWrapper";
+
 export default function App() {
-  return <div>App</div>;
+  return (
+    <>
+      <ARWrapper />
+    </>
+  );
 }
