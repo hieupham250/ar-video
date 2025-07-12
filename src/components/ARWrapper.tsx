@@ -1,27 +1,28 @@
 import { Canvas } from "@react-three/fiber";
 import { XR, createXRStore } from "@react-three/xr";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import ARScene from "./ARScene";
 import { useParams } from "react-router-dom";
+import { Alert, Button, Spin } from "antd";
 
 export default function ARWrapper() {
   const store = useMemo(() => createXRStore(), []);
   const { id } = useParams();
+  const [isARSupported, setIsARSupported] = useState<boolean | null>(null);
 
-  // useEffect(() => {
-  //   const handleUserGesture = () => {
-  //     store.enterXR("immersive-ar").catch((err) => {
-  //       console.error(err);
-  //     });
-  //     window.removeEventListener("click", handleUserGesture);
-  //   };
-
-  //   window.addEventListener("click", handleUserGesture);
-
-  //   return () => {
-  //     window.removeEventListener("click", handleUserGesture);
-  //   };
-  // }, [store]);
+  useEffect(() => {
+    if (navigator.xr && navigator.xr.isSessionSupported) {
+      navigator.xr
+        .isSessionSupported("immersive-ar")
+        .then((supported) => setIsARSupported(supported))
+        .catch((err) => {
+          console.error(err);
+          setIsARSupported(false);
+        });
+    } else {
+      setIsARSupported(false);
+    }
+  }, []);
 
   return (
     <>
@@ -34,21 +35,23 @@ export default function ARWrapper() {
           transform: "translate(-50%, -50%)",
         }}
       >
-        <button
-          style={{
-            padding: "16px 24px",
-            fontSize: "18px",
-            background: "#007bff",
-            color: "#fff",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-          }}
-          onClick={() => store.enterAR()}
-        >
-          Enter AR
-        </button>
+        {isARSupported === null ? (
+          <Spin size="large" tip="Đang kiểm tra hỗ trợ AR..." />
+        ) : isARSupported ? (
+          <Button type="primary" size="large" onClick={() => store.enterAR()}>
+            Bắt đầu AR
+          </Button>
+        ) : (
+          <Alert
+            message="Thiết bị không hỗ trợ AR"
+            description="Trình duyệt hoặc phần cứng của bạn không tương thích với chế độ thực tế tăng cường (AR)."
+            type="error"
+            showIcon
+            style={{ maxWidth: 360 }}
+          />
+        )}
       </div>
+
       <Canvas
         style={{ width: "100vw", height: "100vh" }}
         gl={{ antialias: true, alpha: true }}

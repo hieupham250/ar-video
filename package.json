@@ -14,6 +14,7 @@
     "@react-three/fiber": "^9.2.0",
     "@react-three/xr": "^6.6.19",
     "@types/three": "^0.178.1",
+    "antd": "^5.26.4",
     "hls.js": "^1.6.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
