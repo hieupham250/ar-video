@@ -1,9 +1,12 @@
+import { Route, Routes } from "react-router-dom";
 import ARWrapper from "./components/ARWrapper";
 
 export default function App() {
   return (
     <>
-      <ARWrapper />
+      <Routes>
+        <Route path="/ar/:id" element={<ARWrapper />} />
+      </Routes>
     </>
   );
 }
