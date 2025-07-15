@@ -6,11 +6,17 @@ import * as THREE from "three";
 const videoList = [
   {
     id: 1,
-    url: "https://stream.mux.com/SkS4VeLb00pTGHWtVSKohgXFamS01Zcnb016eOw6nElJy8.m3u8",
+    url: {
+      m3u8: "https://stream.mux.com/w685KDdryJ9vyuciekeQGvY02CR84juk01bkSwml015EzE.m3u8",
+      mp4: "https://res.cloudinary.com/dh775j9ez/video/upload/v1752461876/cat_r9kq1x.mp4",
+    },
   },
   {
     id: 2,
-    url: "https://stream.mux.com/z2EFYB9hNTnxSPtJd012tbeTkk00UCTDDssbwfynqpGzU.m3u8",
+    url: {
+      m3u8: "https://stream.mux.com/eumbSSWMkta6EhrrVJBwhw7oeMy2XOhD500XGlDT9aGM.m3u8",
+      mp4: "https://res.cloudinary.com/dh775j9ez/video/upload/v1752461874/dog_woox7i.mp4",
+    },
   },
 ];
 
@@ -41,7 +47,19 @@ export default function ARScene({ videoId }: { videoId: number }) {
     video.autoplay = true;
     video.setAttribute("webkit-playsinline", "true");
 
-    if (Hls.isSupported()) {
+    // Kiểm tra nếu đang chạy trên thiết bị iOS (iPhone, iPad, iPod)
+    const isIOS =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    // Kiểm tra nếu là Safari
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+    if (isIOS && isSafari && videoData.url.mp4) {
+      // iOS Safari fallback - dùng file .mp4
+      video.src = videoData.url.mp4;
+      video.addEventListener("loadedmetadata", () => {
+        video.play().catch(console.warn);
+      });
+    } else if (Hls.isSupported()) {
       const hls = new Hls({
         autoStartLoad: true,
         startLevel: -1,
@@ -54,14 +72,14 @@ export default function ARScene({ videoId }: { videoId: number }) {
         levelLoadingMaxRetry: 6,
         fragLoadingMaxRetry: 6,
       });
-      hls.loadSource(videoData.url);
+      hls.loadSource(videoData.url.m3u8);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         video.play();
       });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       // fallback cho Safari
-      video.src = videoData.url;
+      video.src = videoData.url.m3u8;
       video.addEventListener("loadedmetadata", () => {
         video.play();
       });
