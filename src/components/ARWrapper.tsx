@@ -3,12 +3,14 @@ import { XR, createXRStore } from "@react-three/xr";
 import { useMemo, useEffect, useState } from "react";
 import ARScene from "./ARScene";
 import { useParams } from "react-router-dom";
-import { Alert, Button, Spin } from "antd";
+import { Alert, Button, Space, Spin } from "antd";
+import FakeARScene from "./FakeARScene";
 
 export default function ARWrapper() {
   const store = useMemo(() => createXRStore(), []);
   const { id } = useParams();
   const [isARSupported, setIsARSupported] = useState<boolean | null>(null);
+  const [isFakeAR, setIsFakeAR] = useState<boolean>(false);
 
   useEffect(() => {
     if (navigator.xr && navigator.xr.isSessionSupported) {
@@ -41,14 +43,19 @@ export default function ARWrapper() {
           <Button type="primary" size="large" onClick={() => store.enterAR()}>
             Bắt đầu AR
           </Button>
-        ) : (
-          <Alert
-            message="Thiết bị không hỗ trợ AR"
-            description="Trình duyệt hoặc phần cứng của bạn không tương thích với chế độ thực tế tăng cường (AR)."
-            type="error"
-            showIcon
-            style={{ maxWidth: 360 }}
-          />
+        ) : isFakeAR ? null : (
+          <Space direction="vertical" align="center">
+            <Alert
+              message="Thiết bị không hỗ trợ AR"
+              description="Trình duyệt hoặc phần cứng không hỗ trợ AR."
+              type="warning"
+              showIcon
+              style={{ maxWidth: 360 }}
+            />
+            <Button onClick={() => setIsFakeAR(true)}>
+              Bắt đầu chế độ giả lập AR
+            </Button>
+          </Space>
         )}
       </div>
 
@@ -57,10 +64,17 @@ export default function ARWrapper() {
         gl={{ antialias: true, alpha: true }}
         camera={{ near: 0.01, far: 20, fov: 70 }}
       >
-        <XR store={store}>
-          <ambientLight />
-          <ARScene videoId={Number(id)} />
-        </XR>
+        {isARSupported && !isFakeAR ? (
+          <XR store={store}>
+            <ambientLight />
+            <ARScene videoId={Number(id)} />
+          </XR>
+        ) : (
+          <>
+            <ambientLight />
+            <FakeARScene videoId={Number(id)} />
+          </>
+        )}
       </Canvas>
     </>
   );

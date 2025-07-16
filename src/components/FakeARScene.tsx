@@ -1,6 +1,6 @@
-import { useXRHitTest } from "@react-three/xr";
+import { useThree } from "@react-three/fiber";
 import Hls from "hls.js";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 const videoList = [
@@ -20,19 +20,17 @@ const videoList = [
   },
 ];
 
-export default function ARScene({ videoId }: { videoId: number }) {
+export default function FakeARScene({ videoId }: { videoId: number }) {
+  const { scene } = useThree();
+  const [cameraTexture, setCameraTexture] = useState<THREE.VideoTexture | null>(
+    null
+  );
   const meshRef = useRef<THREE.Mesh | null>(null);
   const textureRef = useRef<THREE.VideoTexture | null>(null);
-  const tempMatrix = new THREE.Matrix4();
-
-  // lưu xoay của người dùng (bằng vuốt)
   const userRotation = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const startPosition = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
-    if (meshRef.current) {
-      meshRef.current.visible = false;
-    }
-
     const videoData = videoList.find((v) => v.id === videoId);
     if (!videoData) return;
 
@@ -76,68 +74,80 @@ export default function ARScene({ videoId }: { videoId: number }) {
     }
 
     textureRef.current = new THREE.VideoTexture(video);
-  }, []);
-
-  useXRHitTest((hitTestResults, getHitPoseMatrix) => {
-    if (!meshRef.current) return;
-
-    const hit = hitTestResults[0];
-    const mesh = meshRef.current;
-
-    if (hit && mesh) {
-      const matrix = getHitPoseMatrix(tempMatrix, hit);
-
-      if (matrix) {
-        mesh.visible = true;
-
-        const position = new THREE.Vector3();
-        const quaternion = new THREE.Quaternion();
-        const scale = new THREE.Vector3();
-
-        tempMatrix.decompose(position, quaternion, scale);
-
-        mesh.position.copy(position);
-        mesh.quaternion.copy(quaternion);
-        mesh.scale.copy(scale);
-
-        // Áp dụng xoay của người dùng
-        mesh.rotation.x += userRotation.current.x;
-        mesh.rotation.y += userRotation.current.y;
-      } else {
-        mesh.visible = false;
-      }
-    } else if (mesh) {
-      mesh.visible = false;
-    }
-  }, "viewer");
+  }, [videoId]);
 
   useEffect(() => {
-    let startX = 0;
-    let startY = 0;
+    async function getCameraStream() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+        const camVideo = document.createElement("video");
+        camVideo.srcObject = stream;
+        camVideo.play();
+        camVideo.muted = true;
+        camVideo.setAttribute("playsinline", "true");
 
+        const camTexture = new THREE.VideoTexture(camVideo);
+        setCameraTexture(camTexture);
+      } catch (error) {
+        console.error("Không thể truy cập camera:", error);
+      }
+    }
+
+    getCameraStream();
+  }, []);
+
+  useEffect(() => {
+    if (cameraTexture) {
+      scene.background = cameraTexture;
+    }
+
+    return () => {
+      scene.background = null;
+    };
+  }, [cameraTexture, scene]);
+
+  // Xử lý vuốt/xoay
+  useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
+      startPosition.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      const deltaX = e.touches[0].clientX - startX;
-      const deltaY = e.touches[0].clientY - startY;
+      if (!meshRef.current) return;
+
+      const deltaX = e.touches[0].clientX - startPosition.current.x;
+      const deltaY = e.touches[0].clientY - startPosition.current.y;
 
       const rotationSpeed = 0.005;
       userRotation.current.y += deltaX * rotationSpeed;
       userRotation.current.x += deltaY * rotationSpeed;
 
       // Giới hạn X để không lật ngược
-      const maxX = Math.PI / 3;
-      const minX = -Math.PI / 3;
+      const maxX = Math.PI / 4;
+      const minX = -Math.PI / 4;
       userRotation.current.x = Math.max(
         minX,
         Math.min(maxX, userRotation.current.x)
       );
 
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
+      // Áp dụng xoay
+      meshRef.current.rotation.set(
+        userRotation.current.x,
+        userRotation.current.y,
+        0
+      );
+
+      // Cập nhật vị trí bắt đầu
+      startPosition.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
     };
 
     window.addEventListener("touchstart", handleTouchStart);
@@ -148,10 +158,13 @@ export default function ARScene({ videoId }: { videoId: number }) {
       window.removeEventListener("touchmove", handleTouchMove);
     };
   }, []);
-
   return (
-    <mesh ref={meshRef}>
-      <planeGeometry args={[0.13, 0.09]} />
+    <mesh
+      ref={meshRef}
+      position={[0, 1.5, -2]}
+      rotation={[userRotation.current.x, userRotation.current.y, 0]}
+    >
+      <planeGeometry args={[1.3, 0.9]} />
       <meshBasicMaterial
         map={textureRef.current ?? undefined}
         toneMapped={false}
