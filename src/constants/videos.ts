@@ -13,4 +13,11 @@ export const videoList = [
       mp4: "https://res.cloudinary.com/dh775j9ez/video/upload/v1752461874/dog_woox7i.mp4",
     },
   },
+  {
+    id: 3,
+    url: {
+      m3u8: "https://stream.mux.com/U9ncSC02ma3gOuayIEmA1FXC9mn01Hsxiou60201G1MTg6U.m3u8",
+      mp4: "",
+    },
+  },
 ];

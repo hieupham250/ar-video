@@ -14,8 +14,8 @@ export function useVideoStreamTexture(videoId: number) {
 
     const video = document.createElement("video");
     video.crossOrigin = "anonymous";
-    video.loop = true;
-    video.muted = true;
+    video.loop = false;
+    video.muted = false;
     video.playsInline = true;
     video.autoplay = true;
     video.setAttribute("webkit-playsinline", "true");
