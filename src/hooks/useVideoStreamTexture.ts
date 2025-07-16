@@ -14,7 +14,7 @@ export function useVideoStreamTexture(videoId: number) {
 
     const video = document.createElement("video");
     video.crossOrigin = "anonymous";
-    video.loop = false;
+    video.loop = true;
     video.muted = false;
     video.playsInline = true;
     video.autoplay = true;
