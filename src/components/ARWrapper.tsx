@@ -69,11 +69,13 @@ export default function ARWrapper() {
             <ambientLight />
             <ARScene videoId={Number(id)} />
           </XR>
-        ) : (
+        ) : isFakeAR ? (
           <>
             <ambientLight />
             <FakeARScene videoId={Number(id)} />
           </>
+        ) : (
+          ""
         )}
       </Canvas>
     </>
